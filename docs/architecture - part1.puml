@@ -1,0 +1,82 @@
+@startuml amazon-connect-teams-integration-v0.0.1
+
+skinparam BoxPadding 10
+skinparam ParticipantPadding 5
+skinparam ClassBackgroundColor #AliceBlue
+skinparam Shadowing false
+
+title Teams Initiate Amazon Connect Chat
+
+actor User
+participant UserAgent as "Teams"
+box "Azure Cloud"
+  participant AzureBotService as "Azure\nBot Service" #LightBlue
+end box 
+
+box "AWS Cloud"
+    participant API1 as "<font color=white>Amazon\n<font color=white>API Gateway" #OrangeRed
+    participant Lambda1 as "Connect API\nLambda Proxy" #Orange
+    participant MSSDK as "BotBuilder\nFramework" #LightBlue
+    participant DDB as "<font color=white>DynamoDB" #Magenta
+    participant Connect as "<font color=white>Amazon Connect" #OrangeRed
+end box
+
+skinparam SequenceMessageAlign left
+
+User -> UserAgent: 1a. Types message\nin Teams App
+note right
+  Note that the "App" here refers to the
+  "custom" application deployed in Microsoft
+  365  Teams store. This application talks
+  to Amazon API Gateway API endpoint via Azure
+  Bot Service to send user's messages to
+  Amazon Connect.
+end note
+
+UserAgent -> AzureBotService: 1b. Call Bot service\nto invoke Amazon\nAPI Gateway
+AzureBotService -> API1: 1b. Bot Service invokes\nREST API with\nTeams request\npayload
+note right
+  Teams payload contains "from_user",
+  "to_user", "channel", and other
+  metadata.  It also contains the
+  user's "message" they typed in Teams UI.
+end note
+API1 -> Lambda1: 1c. Payload is passed to\nLambda function for\nfurther processing
+Lambda1 -> MSSDK: 1d. Process Teams\nactivity and extract\nuser_id metadata.
+MSSDK --> Lambda1: user_id, from_id\nto_id, channel
+Lambda1 -> DDB: 2. Look-up Teams user_id
+group Teams user_id does not exist in DDB
+  DDB --> Lambda1: 2a. Teams user_id does not exist
+  Lambda1 -> Connect: 3a. Call "start_chat_contact" Connect API
+  Connect --> Lambda1: Save contact_id, participant_id, participant_token
+  Lambda1 -> Connect: 3b. Call "start_contact_streaming" Connect API w/ SNS ARN
+  Connect --> Lambda1: Save streaming_id
+  Lambda1 -> Connect: 3c. Calls "create_participant_connection" API
+  Connect --> Lambda1: Save connection_token
+  Lambda1 -> DDB: 3d. Store metadata
+  note right
+    This is crucial step where "user_id"
+    received from Teams is associated
+    with "contact_id" received from
+    Amazon Connect.  All the metadata
+    received from previous two Connect
+    API calls is stored in DDB along
+    with the original Teams payload.
+  end note
+
+  DDB --> Lambda1: success
+  Lambda1 -> Connect: 4. Send user's chat message
+else Teams user_id exists in DDB
+  DDB --> Lambda1: 2b. Teams user_id exists
+  Lambda1 -> Lambda1: 2b. Extract\nconnection_token\nfrom DDB response
+  Lambda1 -> Connect: 4. Send user's chat message
+end
+
+Connect --> Lambda1: Successfully sent chat message
+Lambda1 -> MSSDK: 4a. Send "Typing"\nindicator to Teams\nUI
+MSSDK -> AzureBotService: 4a. Send "Typing" indicator to Teams UI for given Bot "Activity"
+AzureBotService --> MSSDK: success
+MSSDK --> Lambda1: successfully sent\ntyping indicator
+AzureBotService -> UserAgent: 4b. Show 3-dot\ntyping animation
+
+@enduml

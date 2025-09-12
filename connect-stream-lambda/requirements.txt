@@ -1,0 +1,4 @@
+aiohttp
+requests
+botbuilder.core
+botbuilder.schema

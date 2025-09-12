@@ -1,0 +1,62 @@
+{
+	"folders": [
+		{
+			"name": "root",
+			"path": "."
+		},
+		{
+			"path": "connect-api-lambda"
+		},
+		{
+			"path": "connect-stream-lambda"
+		},
+        {
+			"path": "lex-bedrock-lambda"
+		},
+		{
+			"path": "connect-ccp-flow"
+		},
+		{
+			"path": "chat-clients-sdk"
+		},
+        {
+            "name": "deployment - modules",
+			"path": "deployment/terraform-modules"
+		},
+        {
+            "name": "deployment - solution",
+			"path": "deployment/solution"
+		}
+	],
+	"settings": {
+		"cSpell.words": [
+			"aiohttp",
+			"behaviour",
+			"botbuilder",
+			"boto",
+			"boto3",
+			"botocore",
+			"connectparticipant",
+			"devcontainer",
+			"devcontainers",
+			"langchain",
+			"levelname",
+			"lexbot",
+			"lexv",
+			"millis",
+			"NOSONAR",
+			"s3",
+			"venv"
+		],
+		"python.createEnvironment.trigger": "off",
+		"[python]": {
+			"editor.defaultFormatter": "ms-python.black-formatter"
+		},
+		"files.associations": {
+			"config.json": "jsonc"
+		},
+		"editor.quickSuggestionsDelay": 1000,
+		"editor.hover.delay": 1000,
+		"files.trimTrailingWhitespace": true
+	}
+}

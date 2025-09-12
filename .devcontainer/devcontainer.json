@@ -1,0 +1,73 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+{
+  // Name for the dev container
+  "name": "Teams Connect Blog",
+
+  // mcr python image.  can be upgraded to '0-3.10-bullseye' or later
+  // "image": "mcr.microsoft.com/devcontainers/python:0-3.12-bullseye",
+
+  "build": {
+   "dockerfile": "Dockerfile"
+  },
+
+  // Features to add to the dev container. More info: https://containers.dev/features
+  "features": {
+    "ghcr.io/devcontainers/features/aws-cli:1": {
+      "version": "latest"
+    },
+    "ghcr.io/guiyomh/features/vim:0": {
+      "version": "latest"
+    },
+		"ghcr.io/devcontainers/features/terraform:1": {
+			"version": "latest"
+		}
+  },
+
+  // Set container environment variables
+  "containerEnv": {
+    "TZ": "America/Toronto"
+  },
+
+  // Use 'forwardPorts' to make a list of ports inside the container available locally.
+  // "forwardPorts": [],
+
+  // Uncomment the next line to run commands after the container is created.
+  "postCreateCommand": "cat /etc/os-release && ./setup_workspace.sh",
+
+  // Configure tool-specific properties.
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.isort",
+        "ms-python.black-formatter",
+        "ms-python.vscode-pylance",
+        "ms-python.pylint",
+        "ms-toolsai.jupyter",
+        "ms-toolsai.vscode-jupyter-cell-tags",
+        "ms-toolsai.jupyter-renderers",
+        "ms-toolsai.vscode-jupyter-slideshow",
+        "ms-toolsai.jupyter-keymap",
+        "redhat.vscode-xml",
+        "redhat.vscode-yaml",
+        "amazonwebservices.aws-toolkit-vscode",
+        "njpwerner.autodocstring",
+        "streetsidesoftware.code-spell-checker",
+        "EditorConfig.EditorConfig",
+        "dbaeumer.vscode-eslint",
+        "tamasfe.even-better-toml",
+        "DavidAnson.vscode-markdownlint",
+        "quicktype.quicktype",
+        "aaron-bond.better-comments",
+        "donjayamanne.githistory",
+        "eamodio.gitlens",
+        "ecmel.vscode-html-css",
+        "Arjun.swagger-viewer",
+        "VisualStudioExptTeam.intellicode-api-usage-examples"
+      ]
+    }
+  }
+
+  // Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
+  // "remoteUser": "root"
+}

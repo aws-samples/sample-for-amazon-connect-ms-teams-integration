@@ -1,0 +1,24 @@
+[project]
+name = "lex-bedrock-lambda"
+version = "0.0.1"
+authors = [
+  { name="ProServe Canada", email="proserve@amazon.com" },
+]
+description = "Lambda integrate with Lex chat bot as a Fallback Intent lambda and use invokes FMs in SageMaker or Bedrock services"
+readme = "README.md"
+requires-python = ">=3.12"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "boto3",
+    "botocore",
+    "connect"
+    # 'importlsib-metadata; python_version<"3.8"',
+]
+
+[project.urls]
+"Homepage" = "https://gitlab.aws.dev/proserve-canada-sdt/proserve-canada-sdt-appdev/gen-ai"
+"Bug Tracker" = "https://gitlab.aws.dev/proserve-canada-sdt/proserve-canada-sdt-appdev/gen-ai/-/issues"

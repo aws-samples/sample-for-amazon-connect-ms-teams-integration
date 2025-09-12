@@ -1,0 +1,23 @@
+.DS_Store
+.venv
+dist
+__pycache__
+*.pyc
+.pytest_cache
+package
+*.tar.gz
+build
+ash_issues.py
+ash_output/
+
+# terraform excludes
+**/.terraform*
+*.tfstate
+*.tfstate.*
+.terraformrc
+terraform.rc
+user-*.tfvars
+user-*.tfvars.json
+deployment/output
+temp
+chat-clients-sdk/dists/

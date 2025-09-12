@@ -1,0 +1,103 @@
+{
+  // See https://go.microsoft.com/fwlink/?LinkId=733558
+  // https://code.visualstudio.com/docs/editor/tasks-appendix
+  // for the documentation about the tasks.json format
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "chat-clients-sdk:build",
+      "type": "shell",
+      "command": "python3 -m pip install --upgrade build && python3 -m build",
+      "group": "none",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+        "focus": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "chat-clients-sdk:layer:build",
+      "type": "shell",
+      "command": "./build-layer.sh",
+      "group": "none",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+        "focus": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "chat-clients-sdk:layer:build-cicd",
+      "type": "shell",
+      "command": "./build-layer-cicd.sh",
+      "group": "none",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+        "focus": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "chat-clients-sdk:layer:deploy",
+      "type": "shell",
+      "command": "./deploy-layer-terraform.sh",
+      "group": "none",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "AWS_PROFILE": "default",
+          "AWS_REGION": "us-west-2",
+          // set to 'apply' to install or 'destroy' to remove the infrastructure
+          "TERRAFORM_COMMAND": "apply",
+          "LAYER_NAME": "chat-clients-sdk-layer",
+          "LAYER_DESCRIPTION": "Chat SDK layer",
+          // space separated supported Lambda runtimes for this layer
+          "LAYER_RUNTIMES": "python3.12",
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+        "focus": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "chat-clients-sdk:layer:undeploy",
+      "type": "shell",
+      "command": "./deploy-layer-terraform.sh",
+      "group": "none",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "AWS_PROFILE": "default",
+          "AWS_REGION": "us-west-2",
+          // set to 'apply' to install or 'destroy' to remove the infrastructure
+          "TERRAFORM_COMMAND": "destroy",
+          "LAYER_NAME": "chat-clients-sdk-layer",
+          "LAYER_DESCRIPTION": "Chat SDK layer",
+          // space separated supported Lambda runtimes for this layer
+          "LAYER_RUNTIMES": "python3.12",
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+        "focus": true
+      },
+      "problemMatcher": []
+    }
+  ]
+}

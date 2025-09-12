@@ -1,0 +1,88 @@
+{
+    "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.16/MicrosoftTeams.schema.json",
+    "version": "1.0.0",
+    "manifestVersion": "1.16",
+    "id": "e44712dc-a858-4001-bb88-0b6310f0a9a0",
+    "name": {
+        "short": "Connect App",
+        "full": "Amazon Connect Chat Bot"
+    },
+    "developer": {
+        "name": "Salman Moghal",
+        "mpnId": "",
+        "websiteUrl": "https://www.example.net",
+        "privacyUrl": "https://www.example.net/connect-privacy.html",
+        "termsOfUseUrl": "https://www.example.net/connect-tc.html"
+    },
+    "description": {
+        "short": "Interact with Amazon Connect",
+        "full": "This chat bot allows you to interact with Amazon Connect. You can ask questions from a vast IT Help knowledge based using GenAI backend.  If you can't find the answers you are looking for, you can talk to a live agent."
+    },
+    "icons": {
+        "outline": "outline.png",
+        "color": "color.png"
+    },
+    "accentColor": "#FFFFFF",
+    "bots": [
+        {
+            "botId": "76180246-9b11-4566-a5e1-db69dbb06e9f",
+            "scopes": [
+                "personal",
+                "team",
+                "groupchat"
+            ],
+            "commandLists": [
+                {
+                    "commands": [
+                        {
+                            "title": "welcome",
+                            "description": "Resend welcome card of this Bot"
+                        },
+                        {
+                            "title": "learn",
+                            "description": "Learn about Adaptive Card and Bot Command"
+                        }
+                    ],
+                    "scopes": [
+                        "personal"
+                    ]
+                },
+                {
+                    "commands": [
+                        {
+                            "title": "welcome",
+                            "description": "Resend welcome card of this Bot"
+                        },
+                        {
+                            "title": "learn",
+                            "description": "Learn about Adaptive Card and Bot Command"
+                        }
+                    ],
+                    "scopes": [
+                        "team"
+                    ]
+                },
+                {
+                    "commands": [
+                        {
+                            "title": "welcome",
+                            "description": "Resend welcome card of this Bot"
+                        },
+                        {
+                            "title": "learn",
+                            "description": "Learn about Adaptive Card and Bot Command"
+                        }
+                    ],
+                    "scopes": [
+                        "groupChat"
+                    ]
+                }
+            ],
+            "isNotificationOnly": false,
+            "supportsCalling": false,
+            "supportsVideo": false,
+            "supportsFiles": false
+        }
+    ],
+    "validDomains": []
+}

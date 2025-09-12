@@ -1,0 +1,25 @@
+[project]
+name = "blueprint-connect-stream-lambda"
+version = "0.0.1"
+authors = [
+  { name="ProServe Canada", email="proserve@amazon.com" },
+]
+description = "Lambda function processes messages from SNS that are emitted by Amazon Connect chat. It invokes user selected chat client callback API to send messages to front-end."
+readme = "README.md"
+requires-python = ">=3.12"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "boto3",
+    "botocore",
+    "connect",
+    "common_utils",
+    # 'importlsib-metadata; python_version<"3.8"',
+]
+
+[project.urls]
+"Homepage" = "https://gitlab.aws.dev/proserve-canada-sdt/proserve-canada-sdt-appdev/gen-ai"
+"Bug Tracker" = "https://gitlab.aws.dev/proserve-canada-sdt/proserve-canada-sdt-appdev/gen-ai/-/issues"

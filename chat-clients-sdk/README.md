@@ -1,0 +1,109 @@
+# Overview
+
+This project contains set of commonly used code for interacting with chat client, e.g. MS Teams, Slack. The project also contains helper classes that interact with Amazon Connect chat functionality.
+
+This project depends on [common-utils-sdk](../common-utils-sdk/) library.
+
+## Prereq
+
+Perform following prerequisites:
+
+- Launch the `devcontainer`.
+- Once the container launches, launch a Docker bash terminal window inside chat-clients-sdk project (`Cmd` + `Shift` + `P` + `Terminal: Create New Terminal` on Mac or `Ctrl` + `Shift` + `P` + `Terminal: Create New Terminal` on Windows).  Select `chat-clients-sdk` from the menu.
+- Alternatively, hit the "+" (New Terminal) icon, to start a `bash` terminal.  Make sure to launch the `bash` terminal in `chat-clients-sdk` project.
+- Double check that VS Code automatically `sources` the `.venv` python virtual environment for this project.  Your terminal prompt should look like this:
+
+```sh
+(.venv) vscode ➜ /workspaces/<YOUR_GIT_REPO_DIR>/lib/chat-clients-sdk (main) $
+```
+
+**IMPORTANT**:  If VS Code doesn't automatically source the `.venv` project level python virtual environment, then you did not complete the workspace setup process. !! STOP NOW !! Perform all steps in [Prerequisites.md](../../Prerequisites.md).
+
+## Setup
+
+Optionally run following command on the `bash` prompt inside `devcontainer` to setup the python project from command line.
+
+Note that this setup is already done when you first launch the `devcontainer` or when you select `Dev Containers: Reopen in Container` option.  Therefore, you can safely skip this section.
+
+To setup python virtual environment and install all the project dependencies, run the following command.
+
+```sh
+pwd
+# make sure you are in 'chat-clients-sdk' folder
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+## Build SDK
+
+You can also use VS Code task to build the SDK.  Choose `Task: Run Task` from VS Code Command Pallet (`Cmd` + `Shift` + `P` + `Tasks: Run Task` on Mac or `Ctrl` + `Shift` + `P` + `Tasks: Run Task` on Windows).  Select `chat-clients-sdk:build` task.
+
+Alternatively, run following command to build the whl package (or distribution archives).  Refer to [python packaging](https://packaging.python.org/en/latest/tutorials/packaging-projects/) documentation.
+
+  ```sh
+  python3 -m pip install --upgrade build
+  python3 -m build
+  ```
+
+The commands will generate the wheel file as follows:
+
+  ```text
+  dist/
+  ├── chat_clients-x.y.z-py3-none-any.whl
+  └── chat-clients-x.y.z.tar.gz
+  ```
+
+## Build Lambda Layer
+
+You can execute the VS Code task to build the Lambda layer or use command prompt.  Both options are discussed
+
+Use the following VS Code tasks to build the layer:
+
+- Bring up the VS Code command pallet, `Cmd` + `Shift` + `P` + `Tasks: Run Tasks` (on Mac) or `Ctrl` + `Shift` + `P` + `Tasks: Run Tasks` (on Windows).
+- Select, `chat-clients-sdk:layer:build` task.  This executes the [build-layer.sh](./build-layer.sh) script in the root of `chat-clients-sdk` project folder.
+
+Alternatively, you can use the terminal window to build the layer.
+
+- Launch a Docker bash terminal window (`Cmd` + `Shift` + `P` + `Terminal: Create New Terminal` on Mac or `Ctrl` + `Shift` + `P` + `Terminal: Create New Terminal` on Windows).  Select `chat-clients-sdk` to launch the terminal.
+- Execute following command to build the layer
+
+```sh
+./build-layer.sh
+```
+
+The zip file is located at:
+
+```text
+build/
+├──compressed
+    ├──chat-clients-sdk-x.y.z.zip
+```
+
+Once the layer is built, it is stored as `build/compressed/chat-clients-sdk-<VERSION>.zip`.
+
+## Deploy Layer
+
+You can deploy the built layer, in zip file (above), manually or by using Terraform script in this section.  Manual approach is discussed at the end of this section.
+
+**IMPORTANT:** Before executing commands in this section, open [tasks.json](./.vscode/tasks.json) and ensure `AWS_REGION` under the `chat-clients-sdk:layer:deploy` task points to your desired region.
+
+- Bring up the `Tasks: Run Tasks` command.
+- Select, `chat-clients-sdk:layer:deploy` task.  This deploys the layer in your AWS account using the [deploy-layer-terraform.sh](./deploy-layer-terraform.sh) script.
+
+Alternatively, you can use the terminal window to build and deploy the layer.
+
+- Launch a Docker bash terminal window (`Cmd` + `Shift` + `P` + `Terminal: Create New Terminal` on Mac or `Ctrl` + `Shift` + `P` + `Terminal: Create New Terminal` on Windows).  Select `chat-clients-sdk` to launch the terminal.
+- Execute following command to deploy the layer
+
+```sh
+export AWS_PROFILE=<your_aws_profile>
+export AWS_REGION=<your_region>
+export LAYER_NAME=chat-clients-sdk
+export LAYER_DESCRIPTION="Chat Clients SDK Layer: version x.y.z"
+export LAYER_RUNTIMES="python3.12"
+export TERRAFORM_COMMAND=apply
+./deploy-layer-terraform.sh
+```
+
+To manually deploy the layer, copy the `build/compressed/chat-clients-sdk-<VERSION>.zip` generated in previous section to S3 folder.  Go into Lambda Service console and create / deploy a layer using the zip file S3 location.

@@ -1,0 +1,34 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Python: Debug Tests",
+      "type": "python",
+      "request": "launch",
+      "program": "${file}",
+      "purpose": [
+        "debug-test"
+      ],
+      "internalConsoleOptions": "openOnSessionStart",
+      "justMyCode": false,
+      "env": {
+        "AWS_PROFILE": "default",
+        "AWS_REGION": "us-west-2",
+        "LOG_LEVEL": "debug",
+        "CONNECT_INSTANCE_ID": "a1234567-aaaa-bbbb-cccc-abcdef123456",
+        "CONNECT_CONTACT_FLOW_ID": "b1234567-aaaa-bbbb-cccc-123456abcdef",
+        "STREAMING_ENDPOINT_ARN": "arn:aws:sns:us-west-2:1234567890:CONNECT_STREAM", // set to SNS ARN
+        "CONNECT_SESSION_DDB_TABLE_NAME": "connect-session-table",
+        "CONNECT_SESSION_DDB_TABLE_TTL": "3600", // 1 hour in seconds
+        "TEAMS_IS_SINGLE_TENANT_APP": "false", // specify if azure bot (specified by client id below) is single or multi tenant Azure App
+        // "TEAMS_TENANT_ID": "YOUR_AZURE_TENANT_ID", // if single tenant, specify tenant id.  otherwise, leave it blank
+        "TEAMS_APP_CLIENT_ID": "YOUR_AZURE_BOT_CLIENT_ID",
+        "TEAMS_APP_CLIENT_SECRET": "YOUR_AZURE_BOT_CLIENT_SECRET",
+        "USER_CHAT_CLIENT_TYPE": "TEAMS" // set to 'TEAMS', 'SLACK' or 'WEB'
+      }
+    }
+  ]
+}

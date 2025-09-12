@@ -1,0 +1,57 @@
+@startuml amazon-connect-api-v0.0.1
+
+skinparam BoxPadding 10
+skinparam ParticipantPadding 5
+skinparam ClassBackgroundColor #AliceBlue
+skinparam Shadowing false
+
+title AWS: Amazon Connect API integration (streaming solution)
+
+actor User
+participant Teams as "MS Teams"
+participant Azure as "Azure Bot Service"
+box "AWS Cloud"
+    participant API_1 as "API Gateway" #LightBlue
+    participant Lambda_Proxy as "Connect API Lambda" #LightBlue
+    participant DDB as "DynamoDB" #Orange
+    participant Connect as "Amazon Connect" #Orange
+    participant SNS as "SNS" #Orange
+    participant SNS_Lambda as "Connect Stream Lambda" #LightBlue
+end box
+
+
+User -> Teams: Type private message\nto Teams bot
+Teams -> API_1: Using Teams Event API\ninvoke API Gateway\nwith Event payload
+API_1 -> Lambda_Proxy: Invoke
+Lambda_Proxy -> Lambda_Proxy: Determine\napp type
+Lambda_Proxy -> DDB: Check `user_id`\nexists in database
+
+alt session_id exists
+    DDB --> Lambda_Proxy: return user\ndata
+    Lambda_Proxy -> Lambda_Proxy: extract following\n1. contact_id\n2. participant_token\n3. connection_token
+    Lambda_Proxy -> Connect: invoke Participant Service API "SendMessage"\nUse connection_token and user supplied\n"message"
+    Lambda_Proxy --> API_1: return\n1. message_id\n2. timestamp
+    API_1 --> Teams: return\n1. message_id\n2. timestamp
+else session_id does not exists
+    DDB --> Lambda_Proxy: session doesn't exist
+    Lambda_Proxy -> Connect: invoke "StartChatContact"
+    Connect --> Lambda_Proxy: return "contact_id", "participant_token"
+    Lambda_Proxy -> Connect: invoke "CreateParticipantConnection"
+    Connect --> Lambda_Proxy: return "connection_token" and "websocket_url"
+    Lambda_Proxy -> DDB: Store following:\n1. contact_id\n2. participant_token\n3. connection_token
+    DDB --> Lambda_Proxy: Success/failure
+    Lambda_Proxy -> Connect: invoke Participant Service API "SendMessage"\nUse connection_token and user supplied\n"message"
+    Lambda_Proxy --> API_1: return\n1. message_id\n2. timestamp
+    API_1 --> Teams: return\n1. message_id\n2. timestamp
+end
+
+Connect -> SNS: Send CCP flow\nresponse\nfrom Lex
+SNS -> SNS_Lambda: invoke Lambda with\nCCP response payload
+SNS_Lambda -> SNS_Lambda: extract following\nfrom payload:\n1. contact_id
+SNS_Lambda -> DDB: Search for user data using contact_id as key
+DDB --> SNS_Lambda: return user data
+SNS_Lambda -> SNS_Lambda: extract following\nfrom user data\n1. user_id
+SNS_Lambda --> Teams: Call Teams webhook targettign user_id to return CCP flow response back
+
+
+@enduml

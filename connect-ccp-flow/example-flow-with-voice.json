@@ -1,0 +1,441 @@
+{
+  "Version": "2019-10-30",
+  "StartAction": "121df8f3-0f14-4292-a684-45b9e41a19fa",
+  "Metadata": {
+    "entryPointPosition": {
+      "x": -563.2,
+      "y": -12.8
+    },
+    "ActionMetadata": {
+      "83b76e76-52cc-4732-81ff-1519b0c0f132": {
+        "position": {
+          "x": 1860,
+          "y": 365.6
+        }
+      },
+      "c838698d-af94-41ca-8f3c-862194f160e0": {
+        "position": {
+          "x": 1028,
+          "y": -164
+        }
+      },
+      "ae54d6c1-507d-4d6e-886e-e212cbbcf976": {
+        "position": {
+          "x": 1514.4,
+          "y": 4.8
+        },
+        "parameters": {
+          "ContactFlowId": {
+            "displayName": "Sample Queue Configurations Flow"
+          }
+        },
+        "ContactFlow": {
+          "text": "Sample Queue Configurations Flow"
+        }
+      },
+      "ca31a6ba-d0ab-443e-8b71-0249585ab70c": {
+        "position": {
+          "x": 1080.8,
+          "y": 44.8
+        }
+      },
+      "7c0a92c0-3a0d-4941-9d0e-2ae0e16ce58b": {
+        "position": {
+          "x": 1782.4,
+          "y": 164.8
+        }
+      },
+      "47c0f0fe-5824-479e-b1cb-0205dcb23ca2": {
+        "position": {
+          "x": -208.8,
+          "y": 20.8
+        }
+      },
+      "121df8f3-0f14-4292-a684-45b9e41a19fa": {
+        "position": {
+          "x": -429.6,
+          "y": 18.4
+        },
+        "children": [
+          "1a8fcdba-e997-4fb9-b964-d0f21df8bb2a"
+        ],
+        "overrideConsoleVoice": false,
+        "fragments": {
+          "SetContactData": "1a8fcdba-e997-4fb9-b964-d0f21df8bb2a"
+        },
+        "overrideLanguageAttribute": true
+      },
+      "1a8fcdba-e997-4fb9-b964-d0f21df8bb2a": {
+        "position": {
+          "x": -429.6,
+          "y": 18.4
+        },
+        "dynamicParams": []
+      },
+      "6e53ccd1-94bf-4f4e-a6c7-69d1f2b9cc20": {
+        "position": {
+          "x": 9.6,
+          "y": 20
+        },
+        "parameters": {
+          "EventHooks": {}
+        }
+      },
+      "fe6810db-1fe8-4b8d-a939-65dadbb61ef7": {
+        "position": {
+          "x": 508,
+          "y": -96.8
+        }
+      },
+      "lex invoke block": {
+        "position": {
+          "x": 753.6,
+          "y": 14.4
+        },
+        "isFriendlyName": true,
+        "parameters": {
+          "LexV2Bot": {
+            "AliasArn": {
+              "displayName": "TestBotAlias",
+              "useLexBotDropdown": true,
+              "lexV2BotName": "${lex_bot_name}"
+            }
+          }
+        },
+        "useLexBotDropdown": true,
+        "lexV2BotName": "${lex_bot_name}",
+        "lexV2BotAliasName": "TestBotAlias",
+        "conditionMetadata": [
+          {
+            "id": "659a4332-f18f-4b6c-ba18-8248febe9a98",
+            "operator": {
+              "name": "Equals",
+              "value": "Equals",
+              "shortDisplay": "="
+            },
+            "value": "TalkToAgent"
+          },
+          {
+            "id": "19a7997a-c4d5-42a5-897e-e9cc54a14396",
+            "operator": {
+              "name": "Equals",
+              "value": "Equals",
+              "shortDisplay": "="
+            },
+            "value": "ResetPassword"
+          },
+          {
+            "id": "8c76c8f7-30d5-4266-8ddc-ef2a54ef8a0f",
+            "operator": {
+              "name": "Equals",
+              "value": "Equals",
+              "shortDisplay": "="
+            },
+            "value": "TicketStatus"
+          },
+          {
+            "id": "5c0b5876-2b75-4b86-9f97-66023534fa9f",
+            "operator": {
+              "name": "Equals",
+              "value": "Equals",
+              "shortDisplay": "="
+            },
+            "value": "GoodBye"
+          }
+        ]
+      },
+      "b11b10a6-c4bd-41ba-a9d9-098cc5374035": {
+        "position": {
+          "x": 229.6,
+          "y": 20.8
+        },
+        "conditions": [],
+        "conditionMetadata": [
+          {
+            "id": "9c4d7950-53f9-4c9e-bcf5-6f6099c3770a",
+            "operator": {
+              "name": "Equals",
+              "value": "Equals",
+              "shortDisplay": "="
+            },
+            "value": "CHAT"
+          },
+          {
+            "id": "9f8fdfb4-d768-4d6f-8b79-c20bcba505d3",
+            "operator": {
+              "name": "Equals",
+              "value": "Equals",
+              "shortDisplay": "="
+            },
+            "value": "VOICE"
+          }
+        ]
+      }
+    },
+    "Annotations": [],
+    "name": "iris-flow",
+    "description": "First contact experience",
+    "type": "contactFlow",
+    "status": "PUBLISHED",
+    "hash": {}
+  },
+  "Actions": [
+    {
+      "Parameters": {},
+      "Identifier": "83b76e76-52cc-4732-81ff-1519b0c0f132",
+      "Type": "DisconnectParticipant",
+      "Transitions": {}
+    },
+    {
+      "Parameters": {
+        "Text": "Ok, let me put you through to a customer service agent."
+      },
+      "Identifier": "c838698d-af94-41ca-8f3c-862194f160e0",
+      "Type": "MessageParticipant",
+      "Transitions": {
+        "NextAction": "ae54d6c1-507d-4d6e-886e-e212cbbcf976",
+        "Errors": [
+          {
+            "NextAction": "ae54d6c1-507d-4d6e-886e-e212cbbcf976",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "Text": "Ok, let me initiate a password reset"
+      },
+      "Identifier": "219256b6-6369-420d-b31b-b35be63aeb99",
+      "Type": "MessageParticipant",
+      "Transitions": {
+        "NextAction": "83b76e76-52cc-4732-81ff-1519b0c0f132",
+        "Errors": [
+          {
+            "NextAction": "ae54d6c1-507d-4d6e-886e-e212cbbcf976",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "Text": "The ticket is now resolved."
+      },
+      "Identifier": "2129e6b0-d7dc-4157-86a8-f224b5ae3982",
+      "Type": "MessageParticipant",
+      "Transitions": {
+        "NextAction": "83b76e76-52cc-4732-81ff-1519b0c0f132",
+        "Errors": [
+          {
+            "NextAction": "ae54d6c1-507d-4d6e-886e-e212cbbcf976",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "ContactFlowId": "${queue_flow}"
+      },
+      "Identifier": "ae54d6c1-507d-4d6e-886e-e212cbbcf976",
+      "Type": "TransferToFlow",
+      "Transitions": {
+        "NextAction": "7c0a92c0-3a0d-4941-9d0e-2ae0e16ce58b",
+        "Errors": [
+          {
+            "NextAction": "7c0a92c0-3a0d-4941-9d0e-2ae0e16ce58b",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "Text": "Thanks for your call.  Have a good day."
+      },
+      "Identifier": "ca31a6ba-d0ab-443e-8b71-0249585ab70c",
+      "Type": "MessageParticipant",
+      "Transitions": {
+        "NextAction": "83b76e76-52cc-4732-81ff-1519b0c0f132",
+        "Errors": [
+          {
+            "NextAction": "83b76e76-52cc-4732-81ff-1519b0c0f132",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "Text": "We're sorry, an error occurred. Goodbye."
+      },
+      "Identifier": "7c0a92c0-3a0d-4941-9d0e-2ae0e16ce58b",
+      "Type": "MessageParticipant",
+      "Transitions": {
+        "NextAction": "83b76e76-52cc-4732-81ff-1519b0c0f132"
+      }
+    },
+    {
+      "Parameters": {
+        "FlowLoggingBehavior": "Enabled"
+      },
+      "Identifier": "47c0f0fe-5824-479e-b1cb-0205dcb23ca2",
+      "Type": "UpdateFlowLoggingBehavior",
+      "Transitions": {
+        "NextAction": "6e53ccd1-94bf-4f4e-a6c7-69d1f2b9cc20"
+      }
+    },
+    {
+      "Parameters": {
+        "TextToSpeechVoice": "Joanna"
+      },
+      "Identifier": "121df8f3-0f14-4292-a684-45b9e41a19fa",
+      "Type": "UpdateContactTextToSpeechVoice",
+      "Transitions": {
+        "NextAction": "1a8fcdba-e997-4fb9-b964-d0f21df8bb2a"
+      }
+    },
+    {
+      "Parameters": {
+        "LanguageCode": "en-US"
+      },
+      "Identifier": "1a8fcdba-e997-4fb9-b964-d0f21df8bb2a",
+      "Type": "UpdateContactData",
+      "Transitions": {
+        "NextAction": "47c0f0fe-5824-479e-b1cb-0205dcb23ca2",
+        "Errors": [
+          {
+            "NextAction": "47c0f0fe-5824-479e-b1cb-0205dcb23ca2",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "EventHooks": {
+          "CustomerRemaining": "${disconnect_flow_id}"
+        }
+      },
+      "Identifier": "6e53ccd1-94bf-4f4e-a6c7-69d1f2b9cc20",
+      "Type": "UpdateContactEventHooks",
+      "Transitions": {
+        "NextAction": "b11b10a6-c4bd-41ba-a9d9-098cc5374035",
+        "Errors": [
+          {
+            "NextAction": "b11b10a6-c4bd-41ba-a9d9-098cc5374035",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "Text": "Hello, thanks for contacting us. This is an example of what the Amazon Connect virtual contact center can enable you to do."
+      },
+      "Identifier": "fe6810db-1fe8-4b8d-a939-65dadbb61ef7",
+      "Type": "MessageParticipant",
+      "Transitions": {
+        "NextAction": "lex invoke block"
+      }
+    },
+    {
+      "Parameters": {
+        "Text": "How can I help you today?",
+        "LexV2Bot": {
+          "AliasArn": "${lex_bot_alias_arn}"
+        }
+      },
+      "Identifier": "lex invoke block",
+      "Type": "ConnectParticipantWithLexBot",
+      "Transitions": {
+        "NextAction": "ae54d6c1-507d-4d6e-886e-e212cbbcf976",
+        "Conditions": [
+          {
+            "NextAction": "c838698d-af94-41ca-8f3c-862194f160e0",
+            "Condition": {
+              "Operator": "Equals",
+              "Operands": [
+                "TalkToAgent"
+              ]
+            }
+          },
+          {
+            "NextAction": "219256b6-6369-420d-b31b-b35be63aeb99",
+            "Condition": {
+              "Operator": "Equals",
+              "Operands": [
+                "ResetPassword"
+              ]
+            }
+          },
+          {
+            "NextAction": "2129e6b0-d7dc-4157-86a8-f224b5ae3982",
+            "Condition": {
+              "Operator": "Equals",
+              "Operands": [
+                "TicketStatus"
+              ]
+            }
+          },
+          {
+            "NextAction": "ca31a6ba-d0ab-443e-8b71-0249585ab70c",
+            "Condition": {
+              "Operator": "Equals",
+              "Operands": [
+                "GoodBye"
+              ]
+            }
+          }
+        ],
+        "Errors": [
+          {
+            "NextAction": "ca31a6ba-d0ab-443e-8b71-0249585ab70c",
+            "ErrorType": "NoMatchingCondition"
+          },
+          {
+            "NextAction": "ae54d6c1-507d-4d6e-886e-e212cbbcf976",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "ComparisonValue": "$.Channel"
+      },
+      "Identifier": "b11b10a6-c4bd-41ba-a9d9-098cc5374035",
+      "Type": "Compare",
+      "Transitions": {
+        "NextAction": "lex invoke block",
+        "Conditions": [
+          {
+            "NextAction": "lex invoke block",
+            "Condition": {
+              "Operator": "Equals",
+              "Operands": [
+                "CHAT"
+              ]
+            }
+          },
+          {
+            "NextAction": "fe6810db-1fe8-4b8d-a939-65dadbb61ef7",
+            "Condition": {
+              "Operator": "Equals",
+              "Operands": [
+                "VOICE"
+              ]
+            }
+          }
+        ],
+        "Errors": [
+          {
+            "NextAction": "lex invoke block",
+            "ErrorType": "NoMatchingCondition"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+aiohttp
+asyncio
+botbuilder.core
+botbuilder.schema
+boto3
+requests

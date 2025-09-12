@@ -1,0 +1,168 @@
+{
+  // See https://go.microsoft.com/fwlink/?LinkId=733558
+  // https://code.visualstudio.com/docs/editor/tasks-appendix
+  // for the documentation about the tasks.json format
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "connect-api-lambda:terraform:deploy",
+      "type": "shell",
+      "command": "./deploy-terraform.sh",
+      "group": "none",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "AWS_PROFILE": "default",
+          "AWS_REGION": "us-west-2",
+          // set to 'apply' to install or 'destroy' to remove the infrastructure
+          "TERRAFORM_COMMAND": "apply",
+          "DEPLOYMENT_BUCKET_NAME": "YOUR_DEPLOYMENT_S3_BUCKET", // deployment s3 bucket
+          // "DEPLOYMENT_BUCKET_PATH": "YOUR_DEPLOYMENT_S3_BUCKET_KEY", // a sub-path (if necessary) where terraform will upload lambda zip file. do not prefix with '/'  path is already relative to the root of bucket.
+          "LAMBDA_ROLE_ARN": "arn:aws:iam::YOUR_ACCOUNT:role/YOUR_LAMBDA_EXECUTION_ROLE",
+          "LAMBDA_LAYER_ARN": "arn:aws:lambda:YOUR_AWS_REGION:YOUR_ACCOUNT:layer:chat-clients-sdk:YOUR_LAYER_VERSION",
+          // "SUBNET_IDS": "[\"subnet-123\", \"subnet-456\", \"subnet-789\"]",
+          // "SECURITY_GROUP_IDS": "[\"sg-123\", \"sg-456\", \"sg-789\"]",
+          "LOG_LEVEL": "debug",
+          "CONNECT_INSTANCE_ID": "a1234567-aaaa-bbbb-cccc-abcdef123456",
+          "CONNECT_CONTACT_FLOW_ID": "b1234567-aaaa-bbbb-cccc-123456abcdef",
+          "STREAMING_ENDPOINT_ARN": "arn:aws:sns:us-west-2:1234567890:CONNECT_STREAM", // set to SNS ARN
+          "CONNECT_SESSION_DDB_TABLE_NAME": "connect-session-table",
+          "CONNECT_SESSION_DDB_TABLE_TTL": "3600", // 1 hour in seconds
+          "TEAMS_IS_SINGLE_TENANT_APP": "false", // specify if azure bot (specified by client id below) is single or multi tenant Azure App
+          // "TEAMS_TENANT_ID": "YOUR_AZURE_TENANT_ID", // if single tenant, specify tenant id.  otherwise, leave it blank
+          "TEAMS_APP_CLIENT_ID": "YOUR_AZURE_BOT_CLIENT_ID",
+          "TEAMS_APP_CLIENT_SECRET": "YOUR_AZURE_BOT_CLIENT_SECRET",
+          "USER_CHAT_CLIENT_TYPE": "TEAMS", // set to 'TEAMS', 'SLACK' or 'WEB'
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+        "focus": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "connect-api-lambda:terraform:undeploy",
+      "type": "shell",
+      "command": "./deploy-terraform.sh",
+      "group": "none",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "AWS_PROFILE": "default",
+          "AWS_REGION": "us-west-2",
+          // set to 'apply' to install or 'destroy' to remove the infrastructure
+          "TERRAFORM_COMMAND": "destroy",
+          "DEPLOYMENT_BUCKET_NAME": "YOUR_DEPLOYMENT_S3_BUCKET", // deployment s3 bucket
+          // "DEPLOYMENT_BUCKET_PATH": "YOUR_DEPLOYMENT_S3_BUCKET_KEY", // a sub-path (if necessary) where terraform will upload lambda zip file. do not prefix with '/'  path is already relative to the root of bucket.
+          "LAMBDA_ROLE_ARN": "arn:aws:iam::YOUR_ACCOUNT:role/YOUR_LAMBDA_EXECUTION_ROLE",
+          "LAMBDA_LAYER_ARN": "arn:aws:lambda:YOUR_AWS_REGION:YOUR_ACCOUNT:layer:chat-clients-sdk:YOUR_LAYER_VERSION",
+          // "SUBNET_IDS": "[\"subnet-123\", \"subnet-456\", \"subnet-789\"]",
+          // "SECURITY_GROUP_IDS": "[\"sg-123\", \"sg-456\", \"sg-789\"]",
+          "LOG_LEVEL": "debug",
+          "CONNECT_INSTANCE_ID": "a1234567-aaaa-bbbb-cccc-abcdef123456",
+          "CONNECT_CONTACT_FLOW_ID": "b1234567-aaaa-bbbb-cccc-123456abcdef",
+          "STREAMING_ENDPOINT_ARN": "arn:aws:sns:us-west-2:1234567890:CONNECT_STREAM", // set to SNS ARN
+          "CONNECT_SESSION_DDB_TABLE_NAME": "connect-session-table",
+          "CONNECT_SESSION_DDB_TABLE_TTL": "3600", // 1 hour in seconds
+          "TEAMS_IS_SINGLE_TENANT_APP": "false", // specify if azure bot (specified by client id below) is single or multi tenant Azure App
+          // "TEAMS_TENANT_ID": "YOUR_AZURE_TENANT_ID", // if single tenant, specify tenant id.  otherwise, leave it blank
+          "TEAMS_APP_CLIENT_ID": "YOUR_AZURE_BOT_CLIENT_ID",
+          "TEAMS_APP_CLIENT_SECRET": "YOUR_AZURE_BOT_CLIENT_SECRET",
+          "USER_CHAT_CLIENT_TYPE": "TEAMS", // set to 'TEAMS', 'SLACK' or 'WEB'
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+        "focus": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "connect-api-lambda:api:terraform:deploy",
+      "type": "shell",
+      "command": "./deploy-api-terraform.sh",
+      "group": "none",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "AWS_PROFILE": "default",
+          "AWS_REGION": "us-west-2",
+          "AWS_ACCOUNT_ID": "YOUR_AWS_ACCOUNT",
+          // set to 'apply' to install or 'destroy' to remove the infrastructure
+          "TERRAFORM_COMMAND": "apply",
+          "API_NAME": "connect-chat-api",
+          "API_DESCRIPTION": "REST API that accepts messages from chat clients and invokes Amazon Connect",
+          "API_STAGE_NAME": "YOUR_API_STAGE",
+          "LAMBDA_PROXY_FUNCTION_NAME": "connect-api-lambda",
+          "LAMBDA_PROXY_FUNCTION_ARN": "arn:aws:lambda:us-east-1:YOUR_AWS_ACCOUNT:function:connect-api-lambda",
+          "IS_PRIVATE_API": "false",
+          "API_VPC_ENDPOINT_ID": "", // set a value if IS_PRIVATE_API is "true"
+          "API_GATEWAY_EXECUTION_ROLE_ARN": "",
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+        "focus": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "connect-api-lambda:api:terraform:undeploy",
+      "type": "shell",
+      "command": "./deploy-api-terraform.sh",
+      "group": "none",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "AWS_PROFILE": "default",
+          "AWS_REGION": "us-west-2",
+          "AWS_ACCOUNT_ID": "YOUR_AWS_ACCOUNT",
+          // set to 'apply' to install or 'destroy' to remove the infrastructure
+          "TERRAFORM_COMMAND": "destroy",
+          "API_NAME": "connect-chat-api",
+          "API_DESCRIPTION": "REST API that accepts messages from chat clients and invokes Amazon Connect",
+          "API_STAGE_NAME": "YOUR_API_STAGE",
+          "LAMBDA_PROXY_FUNCTION_NAME": "connect-api-lambda",
+          "LAMBDA_PROXY_FUNCTION_ARN": "arn:aws:lambda:us-east-1:YOUR_AWS_ACCOUNT:function:connect-api-lambda",
+          "IS_PRIVATE_API": "false",
+          "API_VPC_ENDPOINT_ID": "", // set a value if IS_PRIVATE_API is "true"
+          "API_GATEWAY_EXECUTION_ROLE_ARN": "",
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+        "focus": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "connect-api-lambda:cloudwatch",
+      "type": "shell",
+      "command": "aws",
+      "args": [
+        "logs",
+        "tail",
+        "/aws/lambda/connect-api-lambda",
+        "--profile",
+        "default",
+        "--region",
+        "us-west-2"
+      ],
+      "group": "none",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+        "focus": false
+      },
+      "problemMatcher": []
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "chat-clients"
+version = "0.0.3"
+authors = [
+  { name="ProServe Canada", email="proserve@amazon.com" },
+]
+description = "Chat SDK contains code to integrate with MS Teams, Slack, and other third-party chat applications."
+readme = "README.md"
+requires-python = ">=3.12"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "botbuilder",
+    "asyncio"
+    # 'importlsib-metadata; python_version<"3.8"',
+]
+
+[project.urls]
+"Homepage" = "https://gitlab.aws.dev/proserve-canada-sdt/proserve-canada-sdt-appdev/gen-ai"
+"Bug Tracker" = "https://gitlab.aws.dev/proserve-canada-sdt/proserve-canada-sdt-appdev/gen-ai/-/issues"

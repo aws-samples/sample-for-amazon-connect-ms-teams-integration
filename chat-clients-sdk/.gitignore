@@ -1,0 +1,17 @@
+.venv
+dist
+__pycache__
+*.pyc
+.pytest_cache
+package
+*.tar.gz
+build
+
+# terraform excludes
+**/.terraform*
+*.tfstate
+*.tfstate.*
+.terraformrc
+terraform.rc
+user-*.tfvars
+user-*.tfvars.json

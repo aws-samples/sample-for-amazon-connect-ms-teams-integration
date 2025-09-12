@@ -1,0 +1,69 @@
+@startuml amazon-connect-teams-integration-v0.0.2
+
+skinparam BoxPadding 10
+skinparam ParticipantPadding 5
+skinparam ClassBackgroundColor #AliceBlue
+skinparam Shadowing false
+
+title Amazon Connect Streaming Response to Microsoft Teams
+
+actor User
+participant UserAgent as "Teams"
+box "Azure Cloud"
+  participant AzureBotService as "Azure\nBot Service" #LightBlue
+end box 
+
+box "AWS Cloud"
+    participant Lambda2 as "Connect Stream\nLambda" #Orange
+    participant MSSDK as "BotBuilder\nFramework" #LightBlue
+    participant DDB as "<font color=white>DynamoDB" #Magenta
+    participant SNS as "<font color=white>SNS" #Red
+    participant Connect as "<font color=white>Amazon Connect" #OrangeRed
+    participant Lex as "<font color=white>Lex" #SeaGreen
+
+end box
+
+skinparam SequenceMessageAlign left
+
+Connect -> Lex: 5. CCP flow invokes\nLex Chat bot
+Lex --> Connect: Return mock response
+Connect -> SNS: 6. Connect sends\nLex response to\nSNS topic via\nstream.
+SNS -> Lambda2: 6. SNS topic is configured with subscription\nto invoke Lambda with Connect payload.
+Lambda2 -> Lambda2: 7. Extracts contact_id\nfrom SNS payload
+note right
+  Lambda extracts "contact_id"
+  from SNS payload and looks
+  up the appropriate Teams
+  payload from DDB.  Lambda
+  then uses the payload to
+  create an "Activity" object
+  using BotBuilder Framework.
+  This eventually sends Lex
+  response to the correct
+  user in Teams.
+end note
+Lambda2 -> DDB: 7. Look-up "contact_id" in DDB and\nextract Teams payload data.
+group contact_id does not exist in DDB
+    DDB --> Lambda2: Failure. contact_id does not exist.\nThis could happen if ttl for the\nitem in DDB expired or some\nother unexpected errors
+    Lambda2 -> Lambda2: 7a. Log error message
+    note right
+        No response is sent to
+        Teams. Only an error is
+        logged in CloudWatch
+        service.
+        The "typing" indicator
+        eventually times out
+        in Teams UI.
+    end note
+else contact_id exists in DDB
+    DDB --> Lambda2: Success
+    Lambda2 -> MSSDK: 7b. Create Activity\nobject using Teams\npayload from DDB
+    MSSDK --> Lambda2: Return Teams\nactivity object
+    Lambda2 -> MSSDK: 8. Send Lex\nresponse to Teams\nUI
+    MSSDK -> AzureBotService: 8. Send Lex response
+    AzureBotService --> MSSDK: success
+    AzureBotService -> UserAgent: 9. Show Lex\nresponse in UI
+    MSSDK --> Lambda2: successfully sent\nLex response\nto Teams UI
+
+end
+@enduml
