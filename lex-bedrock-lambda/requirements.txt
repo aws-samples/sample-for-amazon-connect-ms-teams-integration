@@ -1,5 +1,0 @@
-aiohttp
-requests
-botbuilder.core
-botbuilder.schema
-../chat-clients-sdk/dist/chat_clients-0.0.3-py3-none-any.whl
