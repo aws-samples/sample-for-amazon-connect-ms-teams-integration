@@ -20,5 +20,5 @@ dependencies = [
 ]
 
 [project.urls]
-"Homepage" = "https://gitlab.aws.dev/proserve-canada-sdt/proserve-canada-sdt-appdev/gen-ai"
-"Bug Tracker" = "https://gitlab.aws.dev/proserve-canada-sdt/proserve-canada-sdt-appdev/gen-ai/-/issues"
+"Homepage" = "https://github.com/aws-samples/sample-for-amazon-connect-ms-teams-integration"
+"Bug Tracker" = "https://github.com/aws-samples/sample-for-amazon-connect-ms-teams-integration/issues"
