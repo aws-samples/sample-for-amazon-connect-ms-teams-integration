@@ -173,7 +173,7 @@
       }
     },
     "Annotations": [],
-    "name": "iris-flow",
+    "name": "service-desk-flow",
     "description": "First contact experience",
     "type": "contactFlow",
     "status": "PUBLISHED",
