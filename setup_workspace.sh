@@ -175,7 +175,6 @@ buildSdk "chat-clients-sdk"
 
 setupPythonVirtualEnvionment "connect-api-lambda"
 setupPythonVirtualEnvionment "connect-stream-lambda"
-setupPythonVirtualEnvionment "lex-bedrock-lambda"
 
 # ----------------------------------------------
 #           Finish workspace setup

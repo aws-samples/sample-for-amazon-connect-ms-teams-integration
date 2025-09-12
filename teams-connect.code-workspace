@@ -10,9 +10,6 @@
 		{
 			"path": "connect-stream-lambda"
 		},
-        {
-			"path": "lex-bedrock-lambda"
-		},
 		{
 			"path": "connect-ccp-flow"
 		},
