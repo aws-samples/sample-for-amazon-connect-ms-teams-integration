@@ -45,7 +45,7 @@
 
 1. This is required to set the Microsoft Entra ID as the audience for the JWT we create using SSO and define the scope in the JWT.
 
-    ![entraId](./docs/images/entraId.png)
+    ![entraId](./docs/images/entraID.png)
 
 2. Go to "App registrations" and select "New registration". Enter a unique name and click "Register".
 
