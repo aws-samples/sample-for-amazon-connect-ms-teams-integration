@@ -5,7 +5,7 @@
 # Bedrock service in this region if you plan to use Bedrock based LLMs
 region = "YOUR_AWS_REGION"
 # put a ARN if you dont want to generate the role
-this_layers_arn = ["arn:aws:lambda:YOUR_AWS_REGION:YOUR_AWS_ACCOUNT:layer:LAYER_NAME:LATEST_DEPLOYED_CHAT_VERSION"]
+this_layer_arn = ["arn:aws:lambda:YOUR_AWS_REGION:YOUR_AWS_ACCOUNT:layer:LAYER_NAME:LATEST_DEPLOYED_CHAT_VERSION"]
 
 # ----------------------------------------------------------
 #                  Lambda Layer Config

@@ -32,13 +32,25 @@ class TeamsApi(BaseApi):
         # configure logger
         self.logger = get_logger(f"{__name__}.{type(self).__name__}")
 
-        # initialize class variables
+        # initialize instance variables (not class-level to avoid cross-invocation bleed)
         self.auth_header = auth_header
         self.payload = payload
+        self.is_connect_chat_disconnected = False
+        self.is_connect_chat_enabled = False
+        self.user_id = None
+        self.user_name = None
+        self.user_query = None
+        # Cache the DDB session for the lifetime of this request to avoid
+        # multiple reads of the same item (is_new_chat, is_agent_active, process_chat
+        # all need it). Set to sentinel so we can distinguish "not yet fetched"
+        # from "fetched and not found" (None).
+        self._session_cache: Dict[str, Any] = {}
+        self._session_fetched: bool = False
 
         # initialize TeamsBot and TeamsClient
         bot = TeamsBot(
             is_new_chat_callback=self.__is_new_chat_session,
+            is_agent_active_callback=self.__is_agent_active,
             set_data_callback=self.__set_chat_data
         )
         self.teams_client = TeamsClient(auth_header=self.auth_header, bot=bot)
@@ -89,6 +101,31 @@ class TeamsApi(BaseApi):
         if self.is_connect_chat_enabled:
             self.logger.debug("Amazon Connect chat enabled")
 
+    def __get_cached_session(self, user_id: str) -> Dict[str, Any]:
+        """
+        Return the DDB session for user_id, fetching it at most once per
+        Lambda invocation. All three callers (is_new_chat, is_agent_active,
+        process_chat) share the same result, reducing DDB reads from 3 to 1.
+        """
+        if not self._session_fetched:
+            self._session_cache = self.get_session(key=user_id) or {}
+            self._session_fetched = True
+        return self._session_cache
+
+    def __invalidate_session_cache(self) -> None:
+        """Force a fresh DDB read on the next __get_cached_session call."""
+        self._session_fetched = False
+        self._session_cache = {}
+
+    def __is_agent_active(self, user_id: str) -> bool:
+        """
+        Returns True if a live agent has joined this user's chat session.
+        Used by TeamsBot to suppress the typing acknowledgement during
+        live-agent conversations.
+        """
+        session = self.__get_cached_session(user_id)
+        return bool(session.get("agent_joined", False))
+
     def __is_new_chat_session(self, user_id: str) -> bool:
         """
         Method checks for user session exists in DDB.  If session
@@ -100,17 +137,10 @@ class TeamsApi(BaseApi):
             user_id (str): Teams user id
 
         Returns:
-            bool: Boolean value indicating if user has started a chat session.  If True, then user has not started a chat session.  If False, then user has started a chat session.
+            bool: True if this is a new session (no DDB record found).
         """
-        # look-up user chat session in DynamoDB
-        response = self.get_session(key=user_id)
-
-        # if response is not set, then user does not exist in DynamoDB
-        if not response:
-            return True
-
-        # user exists in DynamoDB
-        return False
+        session = self.__get_cached_session(user_id)
+        return len(session) == 0
 
     def __process_amazon_connect_chat(self) -> Dict[str, str]:
         """_summary_
@@ -125,13 +155,14 @@ class TeamsApi(BaseApi):
             "teams_event": self.payload,
         }
 
-        # check if user is set
+        # check if user is set — fall back to user_id if name was not provided by Teams
+        # (from_property.name is absent for guest/federated accounts)
         if not self.user_name:
-            error_message = {
-                "error": "User is not set."
-            }
-            self.logger.error("Error: %s", json.dumps(error_message, indent=2))
-            return error_message
+            self.logger.warning(
+                "user_name is not set for user_id '%s', falling back to user_id as display name",
+                self.user_id
+            )
+            self.user_name = self.user_id
 
         # check if text is set
         if not self.user_query:
@@ -141,11 +172,11 @@ class TeamsApi(BaseApi):
             self.logger.error("Error: %s", json.dumps(error_message, indent=2))
             return error_message
 
-        # look-up user chat session in DynamoDB
-        response = None
-        try:
-            response = self.get_session(key=self.user_id)
+        # look-up user chat session in DynamoDB (uses cache — already fetched by callbacks)
+        cached = self.__get_cached_session(self.user_id)
+        response = cached if cached else None
 
+        try:
             # if response is not None, a chat session exits in DDB.  We must
             # update the session entry in DDB with new teams event.
             if response:
@@ -166,6 +197,7 @@ class TeamsApi(BaseApi):
 
             # delete user chat session in DDB
             self.delete_session(key=self.user_id)
+            self.__invalidate_session_cache()
 
             # get contact_id, streaming_id, and connection_token from response
             contact_id = response.get("contact_id")
@@ -205,14 +237,48 @@ class TeamsApi(BaseApi):
                 self.logger.error("Issue during send_message: %s", e)
 
         # if response is not set, then user does not exist in DynamoDB.
-        #  It's a brand new chat session.
+        # It's a brand new chat session, or the previous token expired/contact ended.
+        # Delete any stale DDB record before creating a fresh connection so the next
+        # invocation doesn't attempt to reuse an invalid token.
         if not response or request_failed:
+            if request_failed:
+                self.logger.warning(
+                    "Previous connection token invalid for user '%s' (AccessDeniedException) — "
+                    "contact likely ended. Deleting stale session and starting a new Connect contact.",
+                    self.user_id
+                )
+                self.delete_session(key=self.user_id)
+
             create_connection_result = self.create_connection(user_name=self.user_name)
             self.store_session(key=self.user_id, session_data=create_connection_result, event=event)
+            self.__invalidate_session_cache()
             connection_token = create_connection_result.get("connection_token")
-            send_message_result = self.send_message(connection_token=connection_token, message=self.user_query)
-            result = {
-                "message_id": send_message_result.get("message_id"),
-                "message_timestamp": send_message_result.get("message_timestamp"),
-            }
-            return result
+
+            if request_failed:
+                # Mid-conversation reconnect: the contact ended unexpectedly (idle timeout,
+                # flow completion, etc.) while the user was still chatting. Send their
+                # message to the new contact so it reaches Lex and the conversation continues.
+                send_message_result = self.send_message(connection_token=connection_token, message=self.user_query)
+                return {
+                    "message_id": send_message_result.get("message_id"),
+                    "message_timestamp": send_message_result.get("message_timestamp"),
+                }
+
+            # Brand-new session (no prior DDB record): do NOT send the triggering message.
+            #
+            # The contact flow's Lex block sends an initial prompt ("How can I help you
+            # today?") and then waits for the user's first input. If we immediately send
+            # the message that triggered session creation (e.g. "Hello"), Lex receives it
+            # as the answer to its own prompt — "Hello" matches no intent, hits
+            # NoMatchingCondition, and the flow ends or loops before the user's real
+            # question is ever sent.
+            #
+            # Instead, let the contact flow prompt the user via SNS → connect-stream-lambda
+            # → Teams. The user's NEXT message will be the first real input to Lex, sent
+            # via the existing-session path using the stored connection_token.
+            self.logger.debug(
+                "New Connect session established for user '%s'. "
+                "Waiting for contact flow prompt before forwarding user messages.",
+                self.user_id
+            )
+            return {}

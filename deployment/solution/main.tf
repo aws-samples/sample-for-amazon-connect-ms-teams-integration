@@ -1,5 +1,20 @@
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      # Pinned below 5.71.0 to avoid the hash_key deprecation warning introduced in that
+      # version. The replacement attribute (key_schema) has known state-drift issues in the
+      # 5.x range (github.com/hashicorp/terraform-provider-aws/issues/46335) and should not
+      # be used until those are resolved. Revisit when upgrading to provider 6.x.
+      version = ">= 5.0, < 5.71.0"
+    }
+  }
+
+  required_version = ">= 1.2.0"
+}
+
 provider "aws" {
-  region = var.aws_region  # or your preferred region
+  region = var.aws_region
 }
 
 data "aws_caller_identity" "current" {}
@@ -258,6 +273,7 @@ resource "aws_lambda_function" "connect_api_lambda" {
   source_code_hash = data.archive_file.connect_api_lambda_zip.output_base64sha256
   runtime          = var.connect_api_lambda_runtime
   architectures = [var.connect_api_lambda_architecture]
+  memory_size = var.connect_api_lambda_mem_size
   timeout = var.connect_api_lambda_timeout
   kms_key_arn = aws_kms_key.solution_kms_key.arn
   publish = true
@@ -355,6 +371,7 @@ resource "aws_lambda_function" "connect_stream_lambda" {
   runtime          = var.connect_stream_lambda_runtime
   layers = [aws_lambda_layer_version.chat_clients_sdk_layer.arn]
   kms_key_arn = aws_kms_key.solution_kms_key.arn
+  memory_size = var.connect_stream_lambda_mem_size
   timeout = var.connect_stream_lambda_timeout
   reserved_concurrent_executions = var.connect_stream_lambda_reserved_concurrent_executions
   publish = true
@@ -511,6 +528,36 @@ resource "aws_iam_role" "api_gateway_execution_role" {
   })
 }
 
+# API Gateway requires a CloudWatch Logs role ARN to be set at the account level
+# before logging can be enabled on any stage. This is a one-time per-region
+# account setting. Without it, terraform apply fails with:
+# "CloudWatch Logs role ARN must be set in account settings to enable logging"
+resource "aws_iam_role" "api_gateway_cloudwatch_role" {
+  name = "api-gateway-cloudwatch-logs-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "apigateway.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "api_gateway_cloudwatch_policy" {
+  role       = aws_iam_role.api_gateway_cloudwatch_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
+}
+
+resource "aws_api_gateway_account" "main" {
+  cloudwatch_role_arn = aws_iam_role.api_gateway_cloudwatch_role.arn
+  depends_on          = [aws_iam_role_policy_attachment.api_gateway_cloudwatch_policy]
+}
 resource "aws_iam_role_policy" "lambda_execution_policy" {
   name = "lambda_execution_policy"
   role = aws_iam_role.api_gateway_execution_role.id
@@ -579,6 +626,7 @@ module "connect_api" {
       api_gateway_execution_role_arn = "${aws_iam_role.api_gateway_execution_role.arn}"
     }
   ]
+  depends_on = [aws_api_gateway_account.main]
 }
 
 
@@ -607,6 +655,41 @@ resource "aws_iam_role" "lex_bot_iam_role" {
 resource "aws_iam_role_policy_attachment" "lex_bot_iam_role_policy_statement" {
   role       = aws_iam_role.lex_bot_iam_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonLexFullAccess"
+}
+
+# Q in Connect requires the Lex bot role to have wisdom: permissions.
+# When using a custom IAM role (not a Service Linked Role), these must be
+# added manually — the Lex service cannot update the role automatically.
+resource "aws_iam_role_policy" "lex_bot_q_in_connect_policy" {
+  name = "lex-bot-q-in-connect-policy"
+  role = aws_iam_role.lex_bot_iam_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "QInConnectAssistantPolicy"
+        Effect = "Allow"
+        Action = [
+          "wisdom:CreateSession",
+          "wisdom:GetAssistant"
+        ]
+        Resource = [
+          "arn:aws:wisdom:${var.aws_region}:${local.account_id}:assistant/*",
+          "arn:aws:wisdom:${var.aws_region}:${local.account_id}:assistant/*/*"
+        ]
+      },
+      {
+        Sid    = "QInConnectSessionsPolicy"
+        Effect = "Allow"
+        Action = [
+          "wisdom:SendMessage",
+          "wisdom:GetNextMessage"
+        ]
+        Resource = "arn:aws:wisdom:${var.aws_region}:${local.account_id}:session/*/*"
+      }
+    ]
+  })
 }
 
 resource "aws_lexv2models_bot" "amazon_connect_lex_bot" {

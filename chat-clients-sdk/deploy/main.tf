@@ -14,11 +14,12 @@ provider "aws" {
   region = var.region
 }
 
-module "this_layer" {
-  source                      = "../../../deployment/terraform/module/layer"
-  layer_name                  = var.this_layer_name
-  layer_description           = var.this_layer_description
-  layer_source_code_file_path = var.this_layer_source_code_file_path
-  runtimes                    = var.this_layer_runtimes
-  compatible_architectures    = var.this_layer_compatible_arch
+resource "aws_lambda_layer_version" "this_layer" {
+  filename                 = var.this_layer_source_code_file_path
+  layer_name               = var.this_layer_name
+  description              = var.this_layer_description
+  compatible_runtimes      = var.this_layer_runtimes
+  compatible_architectures = var.this_layer_compatible_arch
+  skip_destroy             = true
+  source_code_hash         = filebase64sha256(var.this_layer_source_code_file_path)
 }

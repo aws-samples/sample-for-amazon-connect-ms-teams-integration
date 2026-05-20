@@ -1,10 +1,10 @@
-Metadata-Version: 2.1
+Metadata-Version: 2.4
 Name: chat-clients
 Version: 0.0.3
 Summary: Chat SDK contains code to integrate with MS Teams, Slack, and other third-party chat applications.
 Author-email: ProServe Canada <proserve@amazon.com>
-Project-URL: Homepage, https://gitlab.aws.dev/proserve-canada-sdt/proserve-canada-sdt-appdev/gen-ai
-Project-URL: Bug Tracker, https://gitlab.aws.dev/proserve-canada-sdt/proserve-canada-sdt-appdev/gen-ai/-/issues
+Project-URL: Homepage, https://github.com/aws-samples/sample-for-amazon-connect-ms-teams-integration
+Project-URL: Bug Tracker, https://github.com/aws-samples/sample-for-amazon-connect-ms-teams-integration/issues
 Classifier: Programming Language :: Python :: 3
 Classifier: License :: MIT License
 Classifier: Operating System :: OS Independent

@@ -104,10 +104,7 @@ class SNS:
 
         # instantiate Slack client
         # self.slack_client = SlackClient()
-        self.auth_header = self.__get_auth_header
-        self.teams_client = TeamsClient(
-            # self.auth_header
-        )
+        self.teams_client = TeamsClient()
 
     def __init_env(self) -> None:
         """
@@ -116,20 +113,7 @@ class SNS:
         # validate USER_CHAT_CLIENT_TYPE contains enumeration defined in UserChatClientType
         user_chat_client_type = os.environ.get("USER_CHAT_CLIENT_TYPE", None)
         if user_chat_client_type and UserChatClientType.is_valid(user_chat_client_type.upper()):
-            self.user_chat_client_type = os.environ.get("USER_CHAT_CLIENT_TYPE").upper()
-
-    def __get_auth_header(self) -> Dict[str, str]:
-        """
-        Get authorization header for Slack client
-        """
-        auth_token = os.environ.get["TEAMS_APP_CLIENT_SECRET"]
-
-        if not auth_token:
-            raise Exception("TEAMS_APP_CLIENT_SECRET environment variable is not set")
-
-        return {
-            "Authorization": f"Bearer {self.auth_header}"
-        }
+            self.user_chat_client_type = os.environ.get("USER_CHAT_CLIENT_TYPE", "").upper()
 
     def process(self) -> str:
         """
@@ -173,11 +157,12 @@ class SNS:
                 contact_id = parsed_event.get('ContactId', None)
                 initial_contact_id = parsed_event.get('InitialContactId', None)
                 participant_role = parsed_event.get('ParticipantRole', None)
+                content_type = parsed_event.get('ContentType', None)
 
                 # validate if any values are None, then continue
-                if content is None or message_id is None or message_type is None or contact_id is None or initial_contact_id is None or participant_role is None:
+                if message_id is None or message_type is None or contact_id is None or initial_contact_id is None or participant_role is None:
                     self.logger.debug(
-                        "Skipping SNS message with missing values. 'Content', 'Id', 'Type', 'ContactId', 'InitialContactId', 'ParticipantRole' are required.  received event: %s",
+                        "Skipping SNS message with missing values. 'Id', 'Type', 'ContactId', 'InitialContactId', 'ParticipantRole' are required.  received event: %s",
                         json.dumps(parsed_event, indent=2))
                     continue
 
@@ -200,6 +185,45 @@ class SNS:
 
                     # look up contact_id in DDB
                     response = self.connect_session_table.get_item_by_contact_id(key=chat_session_table_key)
+
+                    # Detect agent joining via the participant-joined EVENT (fired before the
+                    # agent's first message) and set the flag immediately. This gives the DDB
+                    # write the maximum possible lead time before the user can respond to the
+                    # agent's greeting, avoiding the race condition where the user replies
+                    # before agent_joined=True has propagated.
+                    is_agent_joined_event = (
+                        participant_role == ConnectParticipantRoleType.AGENT.value
+                        and message_type == "EVENT"
+                        and content_type == "application/vnd.amazonaws.connect.event.participant.joined"
+                    )
+                    # Also set on the agent's first MESSAGE as a fallback, in case the
+                    # joined event was missed or arrived out of order.
+                    is_agent_message = (
+                        participant_role == ConnectParticipantRoleType.AGENT.value
+                        and message_type == "MESSAGE"
+                    )
+                    if is_agent_joined_event or is_agent_message:
+                        user_id = response.get("id")
+                        if user_id and not response.get("agent_joined", False):
+                            try:
+                                self.connect_session_table.set_agent_joined(key=user_id)
+                                self.logger.debug(
+                                    "Agent joined — set agent_joined=True for user_id='%s' "
+                                    "(trigger: %s)",
+                                    user_id,
+                                    "participant.joined event" if is_agent_joined_event else "first agent message"
+                                )
+                            except Exception as e:
+                                self.logger.error(
+                                    "Failed to set agent_joined for user_id='%s': %s", user_id, e)
+
+                    # Only forward MESSAGE type events to Teams — skip participant
+                    # joined/left events and other non-message events.
+                    if message_type != "MESSAGE" or content is None:
+                        self.logger.debug(
+                            "Skipping non-message SNS event: type='%s', content_type='%s'",
+                            message_type, content_type)
+                        continue
 
                     # send teams message
                     self.teams_client.send_message(

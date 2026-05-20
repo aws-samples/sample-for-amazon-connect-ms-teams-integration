@@ -391,7 +391,7 @@
         ],
         "Errors": [
           {
-            "NextAction": "ca31a6ba-d0ab-443e-8b71-0249585ab70c",
+            "NextAction": "lex invoke block",
             "ErrorType": "NoMatchingCondition"
           },
           {

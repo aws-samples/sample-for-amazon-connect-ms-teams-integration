@@ -33,6 +33,11 @@ class ConnectSessionTable:
     - `ttl` (number)                   : Time to live for the item. This is used to
                                          delete the item after the specified time.
                                          The default value is 1 day.
+    - `agent_joined` (bool)            : True once a live agent has joined the chat.
+                                         Set by connect-stream-lambda when it receives
+                                         an AGENT-role SNS message. Used by
+                                         connect-api-lambda to suppress the typing
+                                         acknowledgement during live-agent conversations.
 
     """
     # class constants
@@ -272,6 +277,8 @@ class ConnectSessionTable:
                 self.serializer.serialize(item.get("connection_token")) if item.get("connection_token") else None,
             "payload":
                 self.serializer.serialize(item["payload"]) if item.get("payload") else None,
+            "agent_joined":
+                self.serializer.serialize(item.get("agent_joined", False)),
             # required attributes
             "create_timestamp": self.serializer.serialize(item.get("create_timestamp")),
             "last_update_timestamp": self.serializer.serialize(item.get("last_update_timestamp")),
@@ -399,6 +406,29 @@ class ConnectSessionTable:
             item["payload"] = payload
 
         self.__put_item(item)
+
+    def set_agent_joined(self, key: str) -> None:
+        """
+        Atomically set agent_joined=True on an existing session item.
+        Uses a targeted UpdateItem expression to avoid a read-modify-write
+        race condition with connect-api-lambda.
+
+        Args:
+            key (str): hash key (user_id)
+        """
+        current_ts = get_current_local_time()
+        iso_ts_str = get_iso_timestamp(current_ts)
+
+        self.ddb_client.update_item(
+            TableName=self.ddb_table_name,
+            Key={"id": {"S": key}},
+            UpdateExpression="SET agent_joined = :val, last_update_timestamp = :ts",
+            ExpressionAttributeValues={
+                ":val": {"BOOL": True},
+                ":ts":  {"S": iso_ts_str},
+            }
+        )
+        self.logger.debug("Set agent_joined=True for id='%s'", key)
 
     def delete_item(self, key: str) -> None:
         """

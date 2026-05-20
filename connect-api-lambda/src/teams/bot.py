@@ -13,7 +13,7 @@ FAQ_LIST = [
     "Chat with Agent"
 ]
 ACKNOWLEDGEMENT_MESSAGE = "Please give me a few moments to process your request."
-ADAPTIVE_CARD_KEYWORDS = ["hi", "hello", "menu"]
+ADAPTIVE_CARD_KEYWORDS = ["menu"]
 
 DISCONNECT_MESSAGE = "Thank you for using Amazon Connect chat. Have a nice day!"
 DISCONNECT_KEYWORDS = ["bye", "exit", "quit", "disconnect", "close"]
@@ -36,11 +36,13 @@ class TeamsBot(ActivityHandler):
     # class variables
     set_data_callback: Callable = None
     is_new_chat_callback: Callable = None
+    is_agent_active_callback: Callable = None
 
     # logger
     logger: Logger = None
 
-    def __init__(self, is_new_chat_callback: Callable, set_data_callback: Callable):
+    def __init__(self, is_new_chat_callback: Callable, set_data_callback: Callable,
+                 is_agent_active_callback: Callable = None):
         super().__init__()
 
         # configure logger
@@ -48,6 +50,7 @@ class TeamsBot(ActivityHandler):
 
         # initialize class variables
         self.is_new_chat_callback = is_new_chat_callback
+        self.is_agent_active_callback = is_agent_active_callback
         self.set_data_callback = set_data_callback
 
     async def on_members_added_activity(
@@ -72,7 +75,7 @@ class TeamsBot(ActivityHandler):
             self.set_data_callback(
                     user_query=question,
                     user_id=turn_context.activity.from_property.id,
-                    user_name=turn_context.activity.from_property.name,
+                    user_name=turn_context.activity.from_property.name or turn_context.activity.from_property.id,
                     is_connect_chat_enabled=False
                 )
             return
@@ -82,16 +85,25 @@ class TeamsBot(ActivityHandler):
         if self.is_new_chat_callback:
             is_new_chat_session = self.is_new_chat_callback(user_id=turn_context.activity.from_property.id)
 
-        # if it's a new chat, Amazon connect will send a welcome message
-        # we don't send any messages from activity hooks
+        # Resolve display name — from_property.name is not guaranteed for guest/federated
+        # users. Fall back to the user ID so downstream code always has a non-empty value.
+        user_name = turn_context.activity.from_property.name or turn_context.activity.from_property.id
+
+        # On a new session, send an acknowledgement so the user knows their message was
+        # received while the Connect session is being established (StartChatContact +
+        # StartContactStreaming + CreateParticipantConnection all happen after this returns).
+        # Without this, the user sees nothing until Lex/Q in Connect responds via SNS.
         if is_new_chat_session:
-            self.logger.debug("New chat session detected.  user_id: %s", turn_context.activity.from_property.id)
-            # enable amazon connect chat invocation
+            self.logger.debug(
+                "New chat session detected.  user_id: %s",
+                turn_context.activity.from_property.id
+            )
+            await turn_context.send_activity(ACKNOWLEDGEMENT_MESSAGE)
             if self.set_data_callback:
                 self.set_data_callback(
                     user_query=question,
                     user_id=turn_context.activity.from_property.id,
-                    user_name=turn_context.activity.from_property.name,
+                    user_name=user_name,
                     is_connect_chat_enabled=True
                 )
             return
@@ -104,7 +116,7 @@ class TeamsBot(ActivityHandler):
                 self.set_data_callback(
                     user_query=question,
                     user_id=turn_context.activity.from_property.id,
-                    user_name=turn_context.activity.from_property.name,
+                    user_name=user_name,
                     is_connect_chat_enabled=False
                 )
         # check if the incoming message matches any of DISCONNECT_KEYWORDS
@@ -115,18 +127,24 @@ class TeamsBot(ActivityHandler):
                 self.set_data_callback(
                     user_query=question,
                     user_id=turn_context.activity.from_property.id,
-                    user_name=turn_context.activity.from_property.name,
+                    user_name=user_name,
                     is_connect_chat_enabled=True,
                     is_connect_chat_disconnected=True
                 )
         else:
-            await turn_context.send_activity(ACKNOWLEDGEMENT_MESSAGE)
-            # enable amazon connect chat invocation
+            # Only send the typing acknowledgement when a live agent has NOT joined.
+            # Once an agent is active their replies arrive directly — the ack is noise.
+            agent_active = (
+                self.is_agent_active_callback(user_id=turn_context.activity.from_property.id)
+                if self.is_agent_active_callback else False
+            )
+            if not agent_active:
+                await turn_context.send_activity(ACKNOWLEDGEMENT_MESSAGE)
             if self.set_data_callback:
                 self.set_data_callback(
                     user_query=question,
                     user_id=turn_context.activity.from_property.id,
-                    user_name=turn_context.activity.from_property.name,
+                    user_name=user_name,
                     is_connect_chat_enabled=True
                 )
 

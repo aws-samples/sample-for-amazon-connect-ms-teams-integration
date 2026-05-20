@@ -131,6 +131,8 @@ password_reset_intent_name = "ResetPassword"
 password_reset_intent_utterances = [
   "I want to reset my password",
   "Can you help me reset my password",
+  "Can you help me update my password",
+  "I need to update my password",
   "Please reset my password",
   "Password reset"
 ]

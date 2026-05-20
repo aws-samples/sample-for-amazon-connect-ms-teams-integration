@@ -106,6 +106,12 @@ class AmazonConnectClient:
 
         # Step 1: Call the Amazon Connect StartChatContact API to initiate the chat contact.
         # Step 2: Keep track of ContactId and ParticipantToken from the StartChatContact response
+        #
+        # ParticipantConfiguration.ParticipantDetails.ResponseMode:
+        # - COMPLETE (default): wait for the full AI agent response before delivering it
+        # - INCREMENTAL: stream AI agent responses as chunks (required for Connect AI Agents /
+        #   Q in Connect self-service). Without INCREMENTAL, streaming AI agent messages are
+        #   silently dropped and never reach the customer.
         start_chat_contact_response = self.client.start_chat_contact(
             InstanceId=self.instance_id,
             ContactFlowId=self.contact_flow_id,
@@ -115,26 +121,41 @@ class AmazonConnectClient:
             },
             ParticipantDetails={
                 "DisplayName": _user_name
-            }
+            },
+            SupportedMessagingContentTypes=[
+                "text/plain",
+                "text/markdown",
+                "application/vnd.amazonaws.connect.message.interactive",
+                "application/vnd.amazonaws.connect.message.interactive.response"
+            ],
+            ChatDurationInMinutes=60
         )
 
         contact_id = start_chat_contact_response.get("ContactId", None)
         participant_id = start_chat_contact_response.get("ParticipantId", None)
         participant_token = start_chat_contact_response.get("ParticipantToken", None)
         continued_from_contact_id = start_chat_contact_response.get("ContinuedFromContactId", None)
-        self.logger.debug("StartChatContact response attributes: ContactId: '%s', ParticipantId: '%s', ContinuedFromContactId: %s",
+        self.logger.debug(
+            "StartChatContact response attributes: ContactId: '%s', ParticipantId: '%s',"
+            " ContinuedFromContactId: %s",
             contact_id,
             participant_id,
             continued_from_contact_id
         )
         self.logger.debug("StartChatContact response: %s", start_chat_contact_response)
 
-        # if self.user_chat_client_type is not WEB, then call start_contact_streaming
+        # if self.user_chat_client_type is not WEB, then call start_contact_streaming.
+        # IMPORTANT: StartContactStreaming must be called immediately after StartChatContact,
+        # before CreateParticipantConnection, to avoid a race condition where the contact flow
+        # (and any AI Agent / Lex bot) fires its first response before SNS streaming is active.
+        # Messages published to SNS before streaming is established are silently dropped.
         streaming_id = None
         if self.user_chat_client_type != UserChatClientType.WEB.value:
 
-            # Step 3: Call StartContactStreaming to enable real-time message streaming to your SNS topic.
-            #         Provide the Amazon Resource Name (ARN) of the SNS topic as part of this call
+            # Step 3: Call StartContactStreaming to enable real-time message streaming to your
+            #         SNS topic. Provide the Amazon Resource Name (ARN) of the SNS topic.
+            #         This must happen before CreateParticipantConnection so that any welcome
+            #         message emitted by the contact flow / Lex / Q in Connect is captured.
             start_contact_streaming_response = self.client.start_contact_streaming(
                 InstanceId=self.instance_id,
                 ContactId=contact_id,
@@ -143,9 +164,10 @@ class AmazonConnectClient:
                 }
             )
             streaming_id = start_contact_streaming_response.get("StreamingId", None)
-            self.logger.debug("StartContactStreaming response: StreamingId: '%s'",
-                streaming_id)
-            self.logger.debug("StartContactStreaming response: %s", start_contact_streaming_response)
+            self.logger.debug(
+                "StartContactStreaming response: StreamingId: '%s'", streaming_id)
+            self.logger.debug(
+                "StartContactStreaming response: %s", start_contact_streaming_response)
 
         response = {
             "contact_id": contact_id,

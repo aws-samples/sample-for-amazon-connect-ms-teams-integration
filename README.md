@@ -1,114 +1,187 @@
 
 # Overview
 
-This repository contains accompanying source code for the AWS Blog post, [Streamline employee support with Amazon Connect and Microsoft Teams integration](#)
+This repository contains accompanying source code for the AWS Blog post, [Streamline employee support with Amazon Connect and Microsoft Teams integration](https://aws.amazon.com/blogs/contact-center/streamline-employee-support-with-amazon-connect-and-microsoft-teams-integration/)
 
-This application allows Microsoft Teams to communicate with Amazon Connect via Azure Bot service. As a user, you must launch this application to start conversation with Amazon Connect.
+This application allows Microsoft Teams to communicate with Amazon Connect via Azure Bot service. As a user, you must launch this application to start a conversation with Amazon Connect.
 
-When a user sends a message in Microsoft Teams application, the message is intercepted by Azure Bot service, which will invoke Amazon API Gateway API.  A Lambda function, ‘Connect Chat API’, starts a chat session with Amazon Connect and starts a CCP flow execution. This Lambda function stores the necessary Microsoft Teams user metadata and Amazon Connect metadata into Amazon DynamoDB table. The metadata is later used during the response flow.
+When a user sends a message in Microsoft Teams, the message is intercepted by Azure Bot service, which invokes Amazon API Gateway. A Lambda function, `connect-api-lambda`, starts a chat session with Amazon Connect and starts a CCP flow execution. This Lambda function stores the necessary Microsoft Teams user metadata and Amazon Connect metadata into an Amazon DynamoDB table. The metadata is later used during the response flow.
 
-The CCP flow, shown in ‘Amazon Connect integration detailed design’ section, contains Amazon Lex chat bot integration. Amazon Lex responds based on user’s input.  To keep things simple, for demonstration purposes, the solution discussed in this blog uses basic Amazon Lex utterances and canned responses.
+The CCP flow contains Amazon Lex chatbot integration. Amazon Lex responds based on the user's input. To keep things simple, for demonstration purposes, the solution uses basic Amazon Lex utterances and canned responses.
 
-Amazon Connect routes the response to SNS topic when a chat response is generated, either from the CCP flow directly or from a live agent during conversation. SNS subscription starts another Lambda function execution, ‘Connect Stream Lambda’. This Lambda function looks up user’s Microsoft Teams metadata in DynamoDB table using contact flow information sent in SNS payload.  The Lambda function finally sends Amazon Connect CCP flow response to the appropriate user in Microsoft Teams using Microsoft BotBuilder framework API.
+Amazon Connect routes the response to an SNS topic when a chat response is generated, either from the CCP flow directly or from a live agent. The SNS subscription triggers another Lambda function, `connect-stream-lambda`. This Lambda function looks up the user's Microsoft Teams metadata in DynamoDB using the contact ID sent in the SNS payload, then sends the Amazon Connect response to the appropriate Teams user via the Microsoft BotBuilder framework.
 
 ![Figure 1: Amazon Connect & Microsoft Teams Integration architecture](./docs/ConnectTeamsIntegration.png)
 
-The solution presented here implements a private chat with a Microsoft Teams app. You can extend the solution to interact with Microsoft Teams app that is part of a group conversation.
-
-A reference implementation of Amazon API Gateway REST API, AWS Lambda Functions, Amazon Connect CCP Flow, Amazon Lex Chat bot, Amazon DynamoDB table, is provided here.
+The solution implements a private chat with a Microsoft Teams app. You can extend it to interact with a Teams app that is part of a group conversation.
 
 ## Pre-requisites
 
 ### Microsoft Teams
 
-You must have an active Microsoft Teams business plan activated. This allows for creation and publishing of Teams app which is used to demonstrate the solution.
+You must have an active Microsoft Teams business plan. This allows creation and publishing of a Teams app used to demonstrate the solution.
 
 ### Azure resources
 
-The solution requires setting up an Azure bot which integrates with Microsoft teams and acts as an interface between Microsoft Teams and Amazon API Gateway.
+The solution requires an Azure Bot that integrates with Microsoft Teams and acts as an interface between Teams and Amazon API Gateway.
 
-Lookup [pre-requisites](Prerequisites.md) to set these up.
+Follow the [pre-requisites guide](Prerequisites.md) to set these up. Note the following values — you will need them when configuring `sample.tfvars` before deploying:
 
-## Deployment
+1. Teams app client ID — `teams_app_client_id`
+2. Teams app client secret — `teams_app_client_secret`
+3. Teams app tenant ID — `teams_tenant_id`
+4. Whether the app is single tenant — `teams_is_single_tenant_app` (set to `"true"` for single tenant)
+5. User chat client type — `user_chat_client_type` (set to `"TEAMS"` for this solution)
 
-### Deploying the resources on AWS
+### Python virtual environment
 
-Terraform is used to deploy the components of the application. To perform the deployment, you must ensure that the pre-requisites are met
-and then update a copy of the `sample.tfvars` file with the appropriate values.
-
-Before deploying terraform resources, the `chat-clients-sdk` Lambda layer must be built first. This can simply be done
-by running the shell script `chat-clients-sdk/build-layer.sh` which creates the build artifacts.
+The build scripts require a Python 3.12+ virtual environment. Create and activate one before running any build or deploy steps:
 
 ```bash
 cd chat-clients-sdk
+python3.12 -m venv .venv
+source .venv/bin/activate
+pip install build
+```
+
+## Deployment
+
+### Step 1 — Build the Lambda layer
+
+The `chat-clients-sdk` Lambda layer must be built before deploying any Terraform resources.
+
+```bash
+cd chat-clients-sdk
+source .venv/bin/activate   # if not already active
 python -m build
 sh build-layer.sh
 ```
 
-Once this is completed, the layer and other resources can be deployed using the following commands.
+This produces `chat-clients-sdk/build/compressed/chat-clients-sdk-layer-<version>.zip`, which is referenced by the main Terraform deployment.
+
+#### Optional: deploy the layer separately
+
+If you want to publish the layer to AWS independently (for example, to reuse it across multiple deployments), use the provided deploy script:
 
 ```bash
-terraform init
-terraform apply -var-file=sample.tfvars
+cd chat-clients-sdk
+export AWS_PROFILE=your-profile
+export AWS_REGION=us-east-1
+export TERRAFORM_COMMAND=apply
+export LAYER_NAME=chat-clients-sdk-layer
+export LAYER_DESCRIPTION="Chat clients SDK layer"
+export LAYER_RUNTIMES="python3.12"
+sh deploy-layer-terraform.sh
 ```
 
-### Details from Azure
+### Step 2 — Configure deployment variables
 
-Some of the Microsoft Teams and Azure Bot related details that are needed for the deployed are mentioned below.
+Copy `deployment/solution/sample.tfvars` and fill in your values:
 
-1. Teams app client ID - `teams_app_client_id`
-2. Teams app client secret - `teams_app_client_secret`
-3. Teams app tenant ID - `teams_tenant_id`
-4. Flag indicating whether the app is single tenant - `teams_is_single_tenant_app`
-5. User chat client type - `user_chat_client_type` which is set to `TEAMS` for this demonstration
+```bash
+cp deployment/solution/sample.tfvars deployment/solution/my.tfvars
+```
 
-Next, navigate to the [Amazon Lex Console](https://us-east-1.console.aws.amazon.com/lexv2/home) and navigate to the created bot - Bot version - All languages - English and click on `Build`.
+At minimum, update the following:
 
-### Publishing the bot to Microsoft Teams
+```hcl
+aws_region              = "us-east-1"          # your target region
+teams_app_client_id     = "YOUR_TEAMS_APP_CLIENT_ID"
+teams_app_client_secret = "YOUR_TEAMS_APP_CLIENT_SECRET"
+teams_tenant_id         = "YOUR_TEAMS_APP_TENANT_ID"
+connect_instance_alias  = "your-unique-alias"  # must be globally unique across all AWS accounts
+```
 
-Once the above steps are completed the bot can be added to Microsoft teams in the following manner:
+### Step 3 — Deploy with Terraform
 
-1. Edit the [manifest.json](./azure-bot/teams_manifest/manifest.json) and update the following:
+```bash
+cd deployment/solution
+terraform init
+terraform apply -var-file="my.tfvars"
+```
+
+Terraform will deploy:
+- Amazon DynamoDB table (chat session store)
+- KMS key (encryption for DynamoDB, Lambda, SNS, CloudWatch)
+- `connect-api-lambda` and `connect-stream-lambda` Lambda functions
+- Amazon SNS topic and subscription
+- Amazon API Gateway REST API (`/teams` and `/web` endpoints)
+- Amazon Lex bot with intents
+- Amazon Connect instance and contact flow
+
+### Step 4 — Build the Lex bot
+
+Terraform creates the Lex bot and intents but cannot trigger the build. After `terraform apply` completes:
+
+1. Open the [Amazon Lex Console](https://us-east-1.console.aws.amazon.com/lexv2/home)
+2. Navigate to the created bot → **Bot versions** → **All languages** → **English (US)**
+3. Click **Build**
+
+The bot must be built before Amazon Connect can invoke it.
+
+### Step 5 — Update the Azure Bot messaging endpoint
+
+After Terraform completes, it outputs the API Gateway invoke URL:
+
+```
+connect_api_url = "https://<id>.execute-api.<region>.amazonaws.com/dev/teams"
+```
+
+Set this as the **Messaging endpoint** in your Azure Bot configuration (Azure Portal → your bot → **Configuration**).
+
+### Step 6 — Publish the bot to Microsoft Teams
+
+1. Edit [`azure-bot/teams-manifest/manifest.json`](./azure-bot/teams-manifest/manifest.json) and update:
 
     ```plaintext
-    id: A valid uuid
-
-    developer.websiteUrl: The https:// URL to the developer's website. This link must take users to your company or product-specific landing page.
-
-    developer.privacyUrl: The https:// URL to the developer's privacy policy.
-
-    developer.termsOfUseUrl: The https:// URL to the developer's terms of use.
-
-    bots.botId: Change this to the Azure Bot ID
+    id:                      A valid UUID (generate one at https://www.uuidgenerator.net/)
+    developer.websiteUrl:    https:// URL to your company or product landing page
+    developer.privacyUrl:    https:// URL to your privacy policy
+    developer.termsOfUseUrl: https:// URL to your terms of use
+    bots.botId:              Your Azure Bot App ID
     ```
 
-2. You may refer to the [Manifest Schema guidelines](https://learn.microsoft.com/en-us/microsoftteams/platform/resources/schema/manifest-schema) for more details
+    Refer to the [Teams Manifest Schema guidelines](https://learn.microsoft.com/en-us/microsoftteams/platform/resources/schema/manifest-schema) for full details.
 
-3. Compress the `azure-bot/teams-manifest` into a zip.
+2. Compress the **contents** inside the `azure-bot/teams-manifest/` folder into a zip file.
 
-4. Visit the [Tools Developer Portal](https://dev.teams.microsoft.com/tools) and select **Import an app**. Then upload the zip to create the app. ![Import App](./docs/images/import_app.png)
+3. Visit the [Teams Developer Portal](https://dev.teams.microsoft.com/tools) and select **Import an app**. Upload the zip to create the app.
 
-5. Open the app settings and under **Publish** find **Publish to org** and click **Publish your app**. ![Publish](./docs/images/publish_app.png) ![Publish to Org](./docs/images/publish_app_to_org.png)
+    ![Import App](./docs/images/import_app.png)
+
+4. Open the app settings, go to **Publish** → **Publish to org**, and click **Publish your app**.
+
+    ![Publish](./docs/images/publish_app.png) ![Publish to Org](./docs/images/publish_app_to_org.png)
 
 ## Testing
 
-Open the bot in Microsoft Teams to then have a conversation with the bot. You can request for a password reset or get the status of a ticket by saying phrases like: "Can you help me reset my password" or "What is the status of the ticket?" respectively. In this demonstration, some canned responses are returned. However, these can be enhanced in Amazon Lex to perform complex actions such as call a Lambda function to further process the request.
+Open the published Teams app and start a conversation with the bot. Try phrases like:
 
-Additionally, you can also chat with a live agent by using phrases such as: "I want to speak with an agent" , "Can I talk to a human" etc. This will put you in a live queue which can be tested from Amazon Connect. You can find detailed steps [here](https://docs.aws.amazon.com/connect/latest/adminguide/chat-testing.html#test-chat).
+- `"Can you help me reset my password"` — triggers the `ResetPassword` intent
+- `"What is the status of the ticket?"` — triggers the `TicketStatus` intent
+- `"I want to speak with an agent"` — triggers the `TalkToAgent` intent and routes to a live queue
+
+Canned responses are returned by default. These can be enhanced in Amazon Lex by adding Lambda fulfillment hooks to execute custom business logic.
+
+To test live agent chat, follow the [Amazon Connect chat testing guide](https://docs.aws.amazon.com/connect/latest/adminguide/chat-testing.html#test-chat).
 
 ## Clean-up
 
-To delete the resources created on AWS use the following Terraform
-command
+### AWS resources
 
 ```bash
-terraform destroy -var-file=sample.tfvars
+cd deployment/solution
+terraform destroy -var-file="my.tfvars"
 ```
 
-To delete the Azure resources - Azure bot and App registration, do the following:
+### Azure resources
 
-1. On the Azure portal, open the Azure bot and under **Overview** click on **Delete**. ![DeleteBot](./docs/images/delete_bot.png)
+1. In the Azure Portal, open your Azure Bot → **Overview** → **Delete**.
 
-2. To delete the App registration, open the registration. ![app_registration](./docs/images/app_registration.png)
+    ![DeleteBot](./docs/images/delete_bot.png)
 
-3. Find the app registration and click on **Delete** ![DeleteRegistration](./docs/images/delete_app_registration.png)
+2. Open **App registrations**, find your registration, and click **Delete**.
+
+    ![app_registration](./docs/images/app_registration.png)
+
+    ![DeleteRegistration](./docs/images/delete_app_registration.png)
